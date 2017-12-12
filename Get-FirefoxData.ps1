@@ -147,13 +147,31 @@ Function Get-FirefoxHistory {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query $Query 
     }
 
-    elseif ($NumberOfDays) {        
+    elseif ($NumberOfDays) {
+       
         # Convert to Epoch time
         $date1 = Get-Date -Date "01/01/1970"
         $date2 = (Get-Date).AddDays(-$NumberOfDays)
         [int]$timeLimit = (New-TimeSpan -Start $date1 -End $date2).TotalSeconds
 
-        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT * FROM moz_places WHERE last_visit_date > $timeLimit"
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT url,last_visit_date FROM moz_places" | ForEach-Object {
+
+            # Convert last_visit_date to string to remove trailing digits
+            $strtime = [string]$_.last_visit_date
+            try {
+
+                # Removes 6 trailing digits (to match $timelimit), and converts back to int
+                [int]$visitTime = $strtime.Substring(0, $strtime.Length-6)
+            }
+
+            #handles errors for null last_visit_date
+            Catch {
+                Continue
+            }
+            if ($visitTime -gt $timeLimit) {
+                Write-Output $_.url
+            }
+        }
     }
 
     elseif ($MostVisited) {
