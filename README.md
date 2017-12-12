@@ -1,4 +1,4 @@
-# PowerShell-Browser-Parsers
+# PowerShell-BrowserData-Parsers
 A collection of cmdlets used to enumerate browser data.
 
 Get-FirefoxData contains Get-FirefoxHistory and Get-FirefoxBookmarks:
