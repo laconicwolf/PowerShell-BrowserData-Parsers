@@ -135,19 +135,19 @@ Function Get-FirefoxHistory {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "PRAGMA table_info(moz_places)" | Select-Object name
     }
 
-    if ($AllUrls) {
+    elseif ($AllUrls) {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT url FROM moz_places"
     }
 
-    if ($Search) {
+    elseif ($Search) {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT url FROM moz_places WHERE url LIKE '%$Search%'"
     }
 
-    if ($Query) {
+    elseif ($Query) {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query $Query 
     }
 
-    if ($NumberOfDays) {        
+    elseif ($NumberOfDays) {        
         # Convert to Epoch time
         $date1 = Get-Date -Date "01/01/1970"
         $date2 = (Get-Date).AddDays(-$NumberOfDays)
@@ -156,7 +156,7 @@ Function Get-FirefoxHistory {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT * FROM moz_places WHERE last_visit_date > $timeLimit"
     }
 
-    if ($MostVisited) {
+    elseif ($MostVisited) {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT * FROM moz_places" | Sort-Object -Property visit_count -Descending | Select-Object url,visit_count -First $MostVisited
     }
 
