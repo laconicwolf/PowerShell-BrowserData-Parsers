@@ -28,23 +28,23 @@ Function Get-FirefoxBookmarks {
 
     # Build the path to the SQLite database. Uses a wildcard (*) in the 
     # path so it will work on the random-character folder name
-    $SQLliteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\*.default\places.sqlite"
-    $SQLliteDbPath = (Get-ChildItem -Path $SQLliteDbPath).Directory.Name
-    $SQLliteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\$SQLliteDbPath\places.sqlite"
+    $SQLiteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\*.default\places.sqlite"
+    $SQLiteDbPath = (Get-ChildItem -Path $SQLiteDbPath).Directory.Name
+    $SQLiteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\$SQLiteDbPath\places.sqlite"
 
-    if (-not (Test-Path -Path $SQLliteDbPath)){
+    if (-not (Test-Path -Path $SQLiteDbPath)){
         Write-Verbose "[*] Could not find the Firefox History SQLite database for user: $UserName"
         return
     }
 
     # Get the fk value from moz_bookmarks, which corresponds to 
     # the id value in moz_places
-    $BookMarkIDs = Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query "SELECT fk FROM moz_bookmarks WHERE fk NOT NULL"
+    $BookMarkIDs = Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT fk FROM moz_bookmarks WHERE fk NOT NULL"
 
     # Set the query to a variable so the fk/id variable can expland into the statement
     $VarQuery = "SELECT url FROM moz_places WHERE id = var"
     foreach($id in $BookMarkIDs) {
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query $VarQuery.Replace('var', $id.fk)
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query $VarQuery.Replace('var', $id.fk)
     }
 }
 
@@ -122,29 +122,29 @@ Function Get-FirefoxHistory {
 
     # Build the path to the SQLite database. Uses a wildcard (*) in the 
     # path so it will work on the random-character folder name
-    $SQLliteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\*.default\places.sqlite"
-    $SQLliteDbPath = (Get-ChildItem -Path $SQLliteDbPath).Directory.Name
-    $SQLliteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\$SQLliteDbPath\places.sqlite"
+    $SQLiteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\*.default\places.sqlite"
+    $SQLiteDbPath = (Get-ChildItem -Path $SQLiteDbPath).Directory.Name
+    $SQLiteDbPath = "$env:SystemDrive\Users\$UserName\AppData\Roaming\mozilla\firefox\Profiles\$SQLiteDbPath\places.sqlite"
 
-    if (-not (Test-Path -Path $SQLliteDbPath)){
+    if (-not (Test-Path -Path $SQLiteDbPath)){
         Write-Verbose "[*] Could not find the Firefox History SQLite database for user: $UserName"
         return
     }
 
     if ($ShowColumns) {
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query "PRAGMA table_info(moz_places)" | Select-Object name
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "PRAGMA table_info(moz_places)" | Select-Object name
     }
 
     if ($AllUrls) {
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query "SELECT url FROM moz_places"
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT url FROM moz_places"
     }
 
     if ($Search) {
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query "SELECT url FROM moz_places WHERE url LIKE '%$Search%'"
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT url FROM moz_places WHERE url LIKE '%$Search%'"
     }
 
     if ($Query) {
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query $Query 
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query $Query 
     }
 
     if ($NumberOfDays) {        
@@ -153,17 +153,17 @@ Function Get-FirefoxHistory {
         $date2 = (Get-Date).AddDays(-$NumberOfDays)
         [int]$timeLimit = (New-TimeSpan -Start $date1 -End $date2).TotalSeconds
 
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query "SELECT * FROM moz_places WHERE last_visit_date > $timeLimit"
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT * FROM moz_places WHERE last_visit_date > $timeLimit"
     }
 
     if ($MostVisited) {
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query "SELECT * FROM moz_places" | Sort-Object -Property visit_count -Descending | Select-Object url,visit_count -First $MostVisited
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT * FROM moz_places" | Sort-Object -Property visit_count -Descending | Select-Object url,visit_count -First $MostVisited
     }
 
     else {
         # If no options were specified just dump everything
         Write-Output "`nNo options specified. Dumping database.`n"
         Start-Sleep -Seconds 3
-        Invoke-SqliteQuery -DataSource $SQLliteDbPath -Query "SELECT * FROM moz_places"
+        Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT * FROM moz_places"
     }
 }
