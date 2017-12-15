@@ -11,7 +11,7 @@ Uses PSSQLite to query the places.sqlite file to extract browser history.
 Uses PSSQLite to query the places.sqlite file to extract browser bookmarks.
 
 ### Scrape-FirefoxHistory
-Uses a Regex to scrape URLs from the places.sqlite file. Use this function if you can't install PSSQLite.
+Uses a Regex to scrape URLs from the places.sqlite file. Use this function if you can't install PSSQLite. Be aware that this will not pull path or querystring history, only protocol://domain (https://www.example.com).
 
 ## Get-InternetExplorerData
 Contains three functions: Get-InternetExplorerHistory, Get-InternetExplorerBookmarks, and Get-WebCacheV01URLs. Get-WebCacheV01URLs requires the ESENT module, which can be found in the PowerShell gallery.
@@ -35,7 +35,4 @@ Uses PSSQLite to query the History sqlite file to extract browser history.
 Extracts browser bookmarks from the Bookmarks JSON file.
 
 ### Scrape-ChromeHistory
-Uses a Regex to scrape URLs from the History file. Use this function if you can't install PSSQLite.
-
-
-
+Uses a Regex to scrape URLs from the History file. Use this function if you can't install PSSQLite. Be aware that this will not pull path or querystring history, only protocol://domain (https://www.example.com).
