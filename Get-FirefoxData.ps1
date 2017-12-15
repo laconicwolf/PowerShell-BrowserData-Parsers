@@ -23,6 +23,13 @@
         [Parameter(Mandatory = $false)]
         $UserName = $env:USERNAME
     )
+    
+     $module = Get-Module -List PSSQLite
+    if (!$module) {
+        Write-Host "`nUnable to locate the PSSQLite module. Use the function 'Scrape-FirefoxHistory' instead." -ForegroundColor Yellow
+        return
+    }
+    Import-Module PSSQLite
 
     # Build the path to the SQLite database. Uses a wildcard (*) in the 
     # path so it will work on the random-character folder name
