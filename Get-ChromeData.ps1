@@ -36,6 +36,52 @@
 }
 
 
+Function Scrape-ChromeHistory {
+    <#
+    .SYNOPSIS
+        Returns the domains listed in the Chrome history file.
+        Author: Jake Miller (@LaconicWolf) 
+        Referenced: https://github.com/rvrsh3ll/Misc-Powershell-Scripts/blob/master/Get-BrowserData.ps1
+        Required Dependencies: None
+    .DESCRIPTION
+        Performs a regex scrape of the Chrome history file to gather domains.
+    .PARAMETER UserName
+        Specifies which User's history file will be scraped. Defaults
+        to $env:USERNAME.
+    .EXAMPLE
+        PS C:\> Scrape-ChromeHistory
+        Will return all bookmarks.
+    .EXAMPLE
+        PS C:\> Scrape-ChromeHistory -Search  Github
+        Will domains containing the string 'Github'.
+    #>
+
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false)]
+        $UserName = $env:USERNAME,
+
+        [Parameter(Mandatory = $false)]
+        $Search
+    )
+
+    $Path = "$Env:SystemDrive\Users\$UserName\AppData\Local\Google\Chrome\User Data\Default\History"
+    if (-not (Test-Path -Path $Path)){
+        Write-Verbose "[*] Could not find Chrome history for username: $UserName"
+        return
+    }
+    $Regex = '(htt(p|s))://([\w-]+\.)+[\w-]+(/[\w- ./?%&=]*)*?'
+    $urls = Get-Content -Path $Path | Select-String -Pattern $regex -AllMatches | % {($_.Matches).Value} | Sort-Object -Unique
+    foreach ($url in $urls) {
+        if (-not($url -match $Search)) {
+            continue
+        }
+        New-Object -TypeName PSObject -Property @{URL = $url}
+    }
+}
+
+
+
 Function Get-ChromeHistory {
     <#
     .SYNOPSIS
@@ -107,6 +153,12 @@ Function Get-ChromeHistory {
 
     )
 
+    $module = Get-Module -List PSSQLite
+
+    if (!$module) {
+        Write-Host "`nUnable to locate the PSSQLite module. Use the function 'Scrape-ChromeHistory' instead." -ForegroundColor Yellow
+        return
+    }
     Import-Module PSSQLite
 
 
@@ -155,7 +207,7 @@ Function Get-ChromeHistory {
                 Continue
             }
             if ($visitTime -gt $timeLimit) {
-                Write-Output $_.url
+                New-object -TypeName PSObject -Property @{URL=$_.url} 
             }
         }
     }

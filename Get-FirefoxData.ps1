@@ -1,6 +1,4 @@
-Import-Module PSSQLite
-
-Function Get-FirefoxBookmarks {
+﻿Function Get-FirefoxBookmarks {
     <#
     .SYNOPSIS
         Returns the Firefox bookmark entries
@@ -45,6 +43,52 @@ Function Get-FirefoxBookmarks {
     $VarQuery = "SELECT url FROM moz_places WHERE id = var"
     foreach($id in $BookMarkIDs) {
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query $VarQuery.Replace('var', $id.fk)
+    }
+}
+
+
+Function Scrape-FirefoxHistory {
+    <#
+    .SYNOPSIS
+        Returns the domains listed in the FirefoxHistory places.sqlite file.
+        Author: Jake Miller (@LaconicWolf) 
+        Referenced: https://github.com/rvrsh3ll/Misc-Powershell-Scripts/blob/master/Get-BrowserData.ps1
+        Required Dependencies: None
+    .DESCRIPTION
+        Performs a regex scrape of the places.sqlite file to gather domains.
+    .PARAMETER UserName
+        Specifies which User's history file will be scraped. Defaults
+        to $env:USERNAME.
+    .EXAMPLE
+        PS C:\> Scrape-FirefoxHistory
+        Will return all bookmarks.
+    .EXAMPLE
+        PS C:\> Scrape-FirefoxHistory -Search  Github
+        Will domains containing the string 'Github'.
+    #>
+
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false)]
+        $UserName = $env:USERNAME,
+
+        [Parameter(Mandatory = $false)]
+        $Search
+    )
+
+    $path = "$Env:systemdrive\Users\$UserName\AppData\Roaming\Mozilla\Firefox\Profiles\*.default\"
+    if (-not (Test-Path -Path $Path)){
+        Write-Verbose "[*] Could not find Firefox history for username: $UserName"
+        return
+    }
+    $Regex = '(htt(p|s))://([\w-]+\.)+[\w-]+(/[\w- ./?%&=]*)*?'
+    $urls = Get-Content $path\places.sqlite | Select-String -Pattern $regex -AllMatches | % {($_.Matches).Value} | Sort -Unique
+
+    foreach ($url in $urls) {
+        if (-not($url -match $Search)) {
+            continue
+        }
+        New-Object -TypeName PSObject -Property @{URL = $url}
     }
 }
 
@@ -119,6 +163,14 @@ Function Get-FirefoxHistory {
         $ShowColumns
 
     )
+     
+    $module = Get-Module -List PSSQLite
+
+    if (!$module) {
+        Write-Host "`nUnable to locate the PSSQLite module. Use the function 'Scrape-FirefoxHistory' instead." -ForegroundColor Yellow
+        return
+    }
+    Import-Module PSSQLite
 
     # Build the path to the SQLite database. Uses a wildcard (*) in the 
     # path so it will work on the random-character folder name
@@ -169,7 +221,7 @@ Function Get-FirefoxHistory {
                 Continue
             }
             if ($visitTime -gt $timeLimit) {
-                Write-Output $_.url
+                New-object -TypeName PSObject -Property @{URL=$_.url} 
             }
         }
     }

@@ -85,6 +85,12 @@ Function Get-WebCacheV01URLs {
 
     )
 
+    $module = Get-Module -List ESENT
+
+    if (!$module) {
+        Write-Host "`nUnable to locate the ESENT module. Please install the ESENT module to use this function." -ForegroundColor Yellow
+        return
+    }
     Import-Module ESENT
 
     if ( -not $Force ) {
