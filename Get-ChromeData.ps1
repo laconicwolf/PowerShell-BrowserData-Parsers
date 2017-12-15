@@ -288,18 +288,19 @@ Function Decrypt-Password {
 Function Get-ChromeCredentialData {
     <#
     .SYNOPSIS
-        Returns the URLs and Usernames listed in the Chrome login_data file.
+        Returns the URL, Username, and decrypted passwords listed in the Chrome login_data file.
         Author: Jake Miller (@LaconicWolf) Adapted from https://github.com/p0z/CPD/blob/master/Chrome_Passwords_Decryptor.ps1 
         Required Dependencies: PSSQLITE
     .DESCRIPTION
-        Queries the login_data file and returns the URLs and usernames.
+        Queries the login_data file and returns the URLs, usernames, and decrypted passwords.
     .PARAMETER UserName
         Specifies which User's login_date file will be queried. Defaults
         to $env:USERNAME.
     .EXAMPLE
-        PS C:\> Get-ChromeLoginURLS
+        PS C:\> Get-ChromeCredentialData
         Will return all URLs and usernames within the login_data file.
     #>
+    
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false)]
